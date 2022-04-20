@@ -49,7 +49,7 @@ If you have multiple wallets, have a unique name for each docker image.
 Run at 9 am every day
 
 ```
-0 9 * * * docker start My_Docker_Run_Name || docker run -v /etc/localtime:/etc/localtime --env-file /path/to/my/wallet_info.env --name My_Docker_Run_Name -d dripcompound:1.0
+0 9 * * * docker start my_docker_run_name || docker run -v /etc/localtime:/etc/localtime --env-file /path/to/my/wallet_info.env --name my_docker_run_name -d dripcompound:1.0
 ```
 
 ### View the logs
@@ -71,3 +71,13 @@ PushOver Notification
 Title: My Drip Wallet: Compounding Complete
 Body: Updated Balance xx.xxx (Increase 0.000) - tx test:aaaabbbbccccdddd
 ```
+
+## Docker Tips
+
+If you update your env file, make sure you delete the old image eg
+
+```
+docker rm my_docker_run_name
+```
+
+If you want to remove the image every time - use the ``--rm`` command in your docker run - If you do this you won't get a log history - it'll be fresh logs every time - can be useful for testing and the likes!
