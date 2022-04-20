@@ -43,3 +43,29 @@ If you have multiple wallets, have a unique name for each docker image.
 # docker start my_wallet_name || docker run -v /etc/localtime:/etc/localtime --env-file my_wallet_name.env --name my_wallet_name -d dripcompound:1.0
 ```
 
+### Cron usage example
+
+Run at 9 am every day
+
+0 9 * * * docker start My_Docker_Run_Name || docker run -v /etc/localtime:/etc/localtime --env-file /path/to/my/wallet_info.env --name My_Docker_Run_Name -d dripcompound:1.0
+
+
+### View the logs
+
+```
+$ docker logs -f drip2_test
+2022-04-20 21:57:14,248: Dripping Work v1.0 Started!
+2022-04-20 21:57:14,248: ----------------
+2022-04-20 21:57:14,248: "My Drip Wallet" Selected for processing
+2022-04-20 21:57:15,643: BNB Balance is x.xxx
+2022-04-20 21:57:15,643: Current Balance xx.xxx
+2022-04-20 21:57:15,643: Available to compound xx.xxx
+PushOver Notification
+Title: My Drip Wallet: Drip Compounding
+Body: Current Balance xx.xxx - Compound x.xxx
+2022-04-20 21:57:16,703: Compounding is set to False, only outputting some messages
+2022-04-20 21:57:16,997: Updated Drip balance is: xx.xxx (Increase 0.000)  <-- Note on False this will alway be 0
+PushOver Notification
+Title: My Drip Wallet: Compounding Complete
+Body: Updated Balance xx.xxx (Increase 0.000) - tx test:aaaabbbbccccdddd
+```
