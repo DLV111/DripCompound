@@ -108,7 +108,7 @@ class DripCompundClass:
                     logging.info(traceback.format_exc())
                     time.sleep(10)
         else:
-            logging.info("Compunding is set to False, only outputting some messages")
+            logging.info("Compounding is set to False, only outputting some messages")
             self.getDripBalance()
             logging.info("Updated Drip balance is: %s (Increase %s)" % (self.DripBalance,self.getDripBalanceIncrease()))
             self.sendMessage("Compounding Complete","Updated Balance %s (Increase %s) - tx %s" % (self.DripBalance,self.getDripBalanceIncrease(),'test:aaaabbbbccccdddd'))
