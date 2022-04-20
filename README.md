@@ -48,8 +48,9 @@ If you have multiple wallets, have a unique name for each docker image.
 
 Run at 9 am every day
 
+```
 0 9 * * * docker start My_Docker_Run_Name || docker run -v /etc/localtime:/etc/localtime --env-file /path/to/my/wallet_info.env --name My_Docker_Run_Name -d dripcompound:1.0
-
+```
 
 ### View the logs
 
