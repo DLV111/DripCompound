@@ -3,11 +3,11 @@ Automation to compound drip
 
 This is some basic automation I put together to perform my daily drip compounding.
 
-If you like this feel free to airdrop me some drip or send some BNB/BUSD to my wallet!
+If you like this please buy me a coffee &/or beer :-) - Airdrop some DRIP or send some BNB/BUSD.
 
 0x1007aaf4b214622155de89546486a070eb731dc0
 
-Feel free to reach out to me at https://t.me/Zobah111 
+If you have any questions you can reach me at https://t.me/Zobah111 
 
 ## Configure the .env file
 
