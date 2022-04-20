@@ -151,6 +151,3 @@ def main():
     dripwallet.compoundDrip(max_tries=int(os.environ.pop('MAX_TRIES',1)),retry_sleep=30)
 
 main()
-
-
-
