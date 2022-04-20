@@ -1,0 +1,3 @@
+web3
+# Required for pushover notifications
+python-pushover
