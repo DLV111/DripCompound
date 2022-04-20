@@ -4,12 +4,13 @@ import logging
 import sys
 import time
 from pushover import Client
-from utils import eth2wei, wei2eth, pancakeswap_api_get_price, read_json_file, to_checksum
+from utils import eth2wei, wei2eth, read_json_file, to_checksum
 from dotenv import load_dotenv
+import traceback
 
 DRIP_TOKEN_ADDRESS = "0xFFE811714ab35360b67eE195acE7C10D93f89D8C"
 DRIP_FAUCET_ABI_FILE = "./abis/Faucet.json"
-VERSION = '0.3'
+VERSION = '1.0'
 
 class DripCompundClass:
     def __init__(self, perform_compounding=False, txn_timeout=120, gas_price=5, rpc_host="https://bsc-dataseed.binance.org:443",min_balance=0.015, rounding=3, **kwargs):
@@ -20,8 +21,8 @@ class DripCompundClass:
             if var not in os.environ:
                 raise EnvironmentError("Failed because '{}' env var is not set.".format(var))
 
-        self.private_key = os.getenv('PRIVATE_KEY')
-        self.wallet_friendly_name = os.getenv('WALLET_FRIENDLY_NAME')
+        self.private_key = os.environ.pop('PRIVATE_KEY')
+        self.wallet_friendly_name = os.environ.pop('WALLET_FRIENDLY_NAME')
         self.perform_write_tx = perform_compounding # By default don't do the compounding, just display stuff.
         logging.info('"%s" Selected for processing' % self.wallet_friendly_name)
         self.rounding = rounding
@@ -32,8 +33,8 @@ class DripCompundClass:
         self.InitDripBalance = 0
 
         # Init the pushover client if defined
-        self.pushover_api_key = os.getenv('PUSHOVER_API_KEY', False)
-        self.pushover_user_key = os.getenv('PUSHOVER_USER_KEY', False)
+        self.pushover_api_key = os.environ.pop('PUSHOVER_API_KEY', False)
+        self.pushover_user_key = os.environ.pop('PUSHOVER_USER_KEY', False)
         self.PushOverClientInit()
 
         # Initialize web3, and load the smart contract objects.
@@ -78,18 +79,34 @@ class DripCompundClass:
     def nonce(self):
         return self.w3.eth.getTransactionCount(self.address)
 
-    def compundDrip(self):
+    def compoundDrip(self, max_tries=1, retry_sleep=30):
+        remaining_retries = max_tries
+        txn_receipt = None
         if self.perform_write_tx.lower() == "true":
-            tx = self.drip_contract.functions.roll().buildTransaction({
-                                "gasPrice": eth2wei(self.gas_price, "gwei"), "nonce": self.nonce()})
-
-            signed_tx = self.w3.eth.account.sign_transaction(tx, self.private_key)
-            txn = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-            logging.info("Transaction: %s" % (self.w3.toHex(txn)))
-            time.sleep(10)
-            self.getDripBalance()
-            logging.info("Updated Drip balance is: %s (Increase %s)" % (self.DripBalance,self.getDripBalanceIncrease()))
-            self.sendMessage("Compounding Complete","Updated Balance %s (Increase %s) - tx %s" % (self.DripBalance,self.getDripBalanceIncrease(),self.w3.toHex(txn)))
+            for _ in range(max_tries):
+                try:
+                    remaining_retries+=-1
+                    tx = self.drip_contract.functions.roll().buildTransaction({
+                                        "gasPrice": eth2wei(self.gas_price, "gwei"), "nonce": self.nonce()})
+                    signed_tx = self.w3.eth.account.sign_transaction(tx, self.private_key)
+                    txn = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+                    txn_receipt = self.w3.eth.waitForTransactionReceipt(txn)
+                    if txn_receipt and "status" in txn_receipt and txn_receipt["status"] == 1: 
+                        logging.info("Transaction Successful: %s" % (self.w3.toHex(txn)))
+                        time.sleep(10)
+                        self.getDripBalance()
+                        logging.info("Updated Drip balance is: %s (Increase %s) - tx %s" % (self.DripBalance,self.getDripBalanceIncrease(),self.w3.toHex(txn)))
+                        self.sendMessage("Compounding Complete","Updated Balance %s (Increase %s) - tx %s" % (self.DripBalance,self.getDripBalanceIncrease(),self.w3.toHex(txn)))
+                        break
+                    else:
+                        logging.info("Compounding Failed. %s retries remaining (%s seconds apart). Transaction status '%s' - tx %s" % (remaining_retries,retry_sleep,txn_receipt["status"],self.w3.toHex(txn)))
+                        self.sendMessage("Compounding Failed","%s retries remaining (%s seconds apart). Transaction status '%s' - tx %s" % (remaining_retries,retry_sleep,txn_receipt["status"],self.w3.toHex(txn)))
+                        logging.debug(txn_receipt)
+                        if remaining_retries != 0:
+                            time.sleep(retry_sleep)
+                except:
+                    logging.info(traceback.format_exc())
+                    time.sleep(10)
         else:
             logging.info("Compunding is set to False, only outputting some messages")
             self.getDripBalance()
@@ -120,7 +137,7 @@ def main():
     logging.info('----------------')
 
     # Import the env file we're using for testing - if running from CLI - we use docker so don't need it.
-    # load_dotenv(dotenv_path="drip_wallet.env")
+    #load_dotenv(dotenv_path="drip_wallet.env")
 
     perform_compounding = os.environ.pop('PERFORM_DRIP_COMPOUNDING', "False")
 
@@ -131,6 +148,9 @@ def main():
     dripwallet.sendMessage("Drip Compounding","Current Balance %s - Compound %s" % (dripwallet.DripBalance,dripwallet.claimsAvailable))
 
     # Actually do the compound step
-    dripwallet.compundDrip()
+    dripwallet.compoundDrip(max_tries=int(os.environ.pop('MAX_TRIES',1)),retry_sleep=30)
 
 main()
+
+
+
