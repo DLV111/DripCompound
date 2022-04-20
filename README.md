@@ -21,6 +21,7 @@ See `drip_wallet.env.example` for a full example
 | PUSHOVER_USER_KEY           | User key from your pushover.net account                                                                           | PUSHOVER_USER_KEY=xxx          | No                 |
 | . IPERFORM_DRIP_COMPOUNDING | If set to True, will perform compounding. Default is not to compound and just test things like notifications etc. | PERFORM_DRIP_COMPOUNDING=True  | No - Default False |
 | MAX_TRIES                   | Number of transaction retries on failure - Default of 1 means it will only try once                               | MAX_TRIES=2                    | No - Default 1     |
+| MIN_BNB_BALANCE             | Min BNB balance to have in your wallet to perform compounding. If less than this it will not perform any actions               | MIN_BNB_BALANCE=0.05            | No - Default 0.02  |
 
 
 ## Running the program
@@ -53,7 +54,7 @@ Run at 9 am every day
 ### View the logs
 
 ```
-$ docker logs -f drip2_test
+$ docker logs -f drip_test
 2022-04-20 21:57:14,248: Dripping Work v1.0 Started!
 2022-04-20 21:57:14,248: ----------------
 2022-04-20 21:57:14,248: "My Drip Wallet" Selected for processing

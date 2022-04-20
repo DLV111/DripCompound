@@ -12,8 +12,8 @@ DRIP_TOKEN_ADDRESS = "0xFFE811714ab35360b67eE195acE7C10D93f89D8C"
 DRIP_FAUCET_ABI_FILE = "./abis/Faucet.json"
 VERSION = '1.0'
 
-class DripCompundClass:
-    def __init__(self, perform_compounding=False, txn_timeout=120, gas_price=5, rpc_host="https://bsc-dataseed.binance.org:443",min_balance=0.015, rounding=3, **kwargs):
+class DripCompoundClass:
+    def __init__(self, perform_compounding=False, txn_timeout=120, gas_price=5, rpc_host="https://bsc-dataseed.binance.org:443",min_balance=0.02, rounding=3, **kwargs):
 
         MANDATORY_ENV_VARS = ["PRIVATE_KEY",'WALLET_FRIENDLY_NAME']
 
@@ -140,8 +140,9 @@ def main():
     #load_dotenv(dotenv_path="drip_wallet.env")
 
     perform_compounding = os.environ.pop('PERFORM_DRIP_COMPOUNDING', "False")
+    min_bnb_balance = float(os.environ.pop('MIN_BNB_BALANCE', 0.02))
 
-    dripwallet = DripCompundClass(perform_compounding)
+    dripwallet = DripCompoundClass(perform_compounding, min_balance=min_bnb_balance)
 
     logging.info("Current Balance %s" % dripwallet.DripBalance)
     logging.info("Available to compound %s" % dripwallet.claimsAvailable)
