@@ -3,9 +3,9 @@ Automation to compound drip
 
 This is some basic automation I put together to perform my daily drip compounding.
 
-If you like this please buy me a coffee &/or beer :-) - Airdrop some DRIP or send some BNB/BUSD.
+If you like this please buy me a coffee &/or beer :-) - Airdrop some DRIP or send some BNB/BUSD to my wallet address
 
-0x1007aaf4b214622155de89546486a070eb731dc0
+`0x1007aaf4b214622155de89546486a070eb731dc0`
 
 If you have any questions you can reach me at https://t.me/Zobah111 
 
