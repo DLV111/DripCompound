@@ -7,6 +7,8 @@ If you like this feel free to airdrop me some drip or send some BNB/BUSD to my w
 
 0x1007aaf4b214622155de89546486a070eb731dc0
 
+Feel free to reach out to me at https://t.me/Zobah111 
+
 ## Configure the .env file
 
 For every wallet you want to use, you must configure the <wallet_name>.env file
