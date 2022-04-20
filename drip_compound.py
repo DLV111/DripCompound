@@ -5,6 +5,7 @@ import sys
 import time
 from pushover import Client
 from utils import eth2wei, wei2eth, read_json_file, to_checksum
+from dotenv import load_dotenv
 import traceback
 
 DRIP_TOKEN_ADDRESS = "0xFFE811714ab35360b67eE195acE7C10D93f89D8C"

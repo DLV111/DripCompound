@@ -1,3 +1,4 @@
-web3
-python-pushover  # Required for pushover notifications
-python-dotenv  # This is used mainly for testing or running without docker
+# Pinned versions as I know it works at these onse
+web3==5.29.0
+python-pushover==0.4  # Required for pushover notifications
+python-dotenv==0.20.0  # This is used mainly for testing or running without docker
