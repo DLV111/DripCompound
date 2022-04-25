@@ -36,13 +36,13 @@ def is_percent_down(previous_amount, current_amount, percent_down):
         return True
     else:
         return False
-    
+
 def is_percent_up(previous_amount, current_amount, percent_up):
     if current_amount - previous_amount > Decimal(previous_amount) * (Decimal(percent_up) / Decimal(100)):
         return True
     else:
         return False
-    
+
 def pancakeswap_api_get_price(token_address, max_tries=1):
     # response example: {"updated_at":1644451690368,"data":{"name":"USD Coin","symbol":"USDC","price":"0.999362623429255457703972330882","price_BNB":"0.002364980172183089994929542565945"}}
     for _ in range(max_tries):
