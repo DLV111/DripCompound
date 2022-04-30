@@ -111,7 +111,7 @@ class DripCompoundClass:
                 'perform_drip_compounding': 'False  # Set to true to actually perform compounding',
                 'max_tries': '2  # Number of retries on a transaction failure - will cost gas each time. 2 means try once more if there is a failure.',
                 'max_tries_delay': '180  # Seconds between retries on a transaction failure. Wait this long before trying again.',
-                '#min_bnb_balance': '0.02  # Optional -  Min BNB Balance to have in your wallet to allow compounding action - default 0.02'
+                '#min_bnb_balance': '0.02  # Optional -  Min BNB Balance to have in your wallet to allow compounding action'
             }
             # Open new file to write
             try:

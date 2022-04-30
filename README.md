@@ -48,7 +48,7 @@ wallet_friendly_name = Test Drip Wallet  # Mandatory - Friendly name to display 
 perform_drip_compounding = False  # Set to true to actually perform compounding
 max_tries = 2  # Number of retries on a transaction failure - will cost gas each time. 2 means try once more if there is a failure.
 max_tries_delay = 180  # Seconds between retries on a transaction failure. Wait this long before trying again.
-#min_bnb_balance = 0.02  # Optional -  Min BNB Balance to have in your wallet to allow compounding action - default 0.02
+#min_bnb_balance = 0.02  # Optional -  Min BNB Balance to have in your wallet to allow compounding action
 ```
 
 ### Python
@@ -123,11 +123,9 @@ Body: Updated Balance xx.xxx (Increase 0.000) - tx test:aaaabbbbccccdddd
 
 ## Docker Tips
 
-```
-docker rm my_docker_run_name
-```
+* If you change the code at all, make sure you delete and rebuild it all
 
-If you want to remove the image every time - use the ``--rm`` command in your docker run - If you do this you won't get a log history - it'll be fresh logs every time - can be useful for testing and the likes!
+* If you want to remove the image every time - use the ``--rm`` command in your docker run - If you do this you won't get a log history - it'll be fresh logs every time - can be useful for testing and the likes!
 
 ### Running multipe wallets
 
