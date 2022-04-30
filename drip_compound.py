@@ -89,7 +89,7 @@ class DripCompoundClass:
             self.perform_drip_compounding = config['drip']['perform_drip_compounding']
             self.max_tries = int(config['drip']['max_tries'])
             self.max_tries_delay = int(config['drip']['max_tries_delay'])
-            self.min_bnb_balance = config['default']['min_bnb_balance']
+            self.min_bnb_balance = config['drip']['min_bnb_balance']
         except:
             logging.info('There was an error opening the config file %s' % config_file)
             logging.info('If this config file does not exist yet, run with -n to create')
