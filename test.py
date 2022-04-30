@@ -1,6 +1,5 @@
 import sys
-sys.path.append('..')
-# from utils import eth2wei, wei2eth, read_json_file, to_checksum
+from utils import eth2wei, wei2eth, read_json_file, to_checksum
 from web3 import Web3
 import os
 from os.path import exists
@@ -14,30 +13,25 @@ import configparser
 
 
 DRIP_TOKEN_ADDRESS = "0xFFE811714ab35360b67eE195acE7C10D93f89D8C"
-DRIP_FAUCET_ABI_FILE = "../abis/Faucet.json"
+DRIP_FAUCET_ABI_FILE = "./abis/Faucet.json"
 VERSION = '1.0'
 
 class DripCompoundClass:
-    def __init__(self, perform_compounding=False, txn_timeout=120, gas_price=5, rpc_host="https://bsc-dataseed.binance.org:443",min_balance=0.02, rounding=3, **kwargs):
+    def __init__(self, perform_compounding=False, txn_timeout=120, gas_price=5, rpc_host="https://bsc-dataseed.binance.org:443",rounding=3, **kwargs):
 
         self.config_args = self.argparser()
         self.config = self.readInConfig(self.config_args)
         self.validateConfig()
 
-
-
-        self.perform_write_tx = perform_compounding # By default don't do the compounding, just display stuff.
         logging.info('"%s" Selected for processing' % self.wallet_friendly_name)
         self.rounding = rounding
-        self.min_balance = min_balance
         self.txn_timeout = txn_timeout
         self.gas_price = gas_price
         self.rpc_host = rpc_host
         self.InitDripBalance = 0
 
+
         # Init the pushover client if defined
-        self.pushover_api_key = os.environ.pop('PUSHOVER_API_KEY', False)
-        self.pushover_user_key = os.environ.pop('PUSHOVER_USER_KEY', False)
         self.PushOverClientInit()
 
         # Initialize web3, and load the smart contract objects.
@@ -49,7 +43,6 @@ class DripCompoundClass:
         self.drip_contract = self.w3.eth.contract(
             to_checksum(DRIP_TOKEN_ADDRESS),
             abi=read_json_file(DRIP_FAUCET_ABI_FILE))
-
 
         self.getDripBalance()
         self.getAvailableClaims()
@@ -64,6 +57,23 @@ class DripCompoundClass:
         if self.wallet_friendly_name == "":
             logging.info("wallet_friendly_name is not set")
             sys.exit(1)
+        if self.perform_drip_compounding == "":
+            logging.info("perform_drip_compounding is not set")
+            sys.exit(1)
+        if self.max_tries == "":
+            logging.info("max_tries is not set")
+            sys.exit(1)
+        if self.max_tries_delay == "":
+            logging.info("max_tries_delay is not set")
+            sys.exit(1)
+        if self.min_bnb_balance == 'False':
+            self.min_bnb_balance = False
+        else:
+            self.min_bnb_balance = float(self.min_bnb_balance)
+        if self.pushover_api_key == 'False':
+            self.pushover_api_key = False
+        if self.pushover_user_key == 'False':
+            self.pushover_user_key = False
 
 
     def readInConfig(self, config_vars):
@@ -71,13 +81,22 @@ class DripCompoundClass:
         if config_vars['new_config'] == True:
             self.createDefaultConfig(config_file)
         try:
-            config = configparser.ConfigParser(inline_comment_prefixes="#")
+            config = configparser.ConfigParser({'min_bnb_balance': False, 'pushover_api_key': False, 'pushover_user_key': False}, inline_comment_prefixes="#")
             config.read(config_file)
+            # [default]
             self.private_key = config['default']['private_key']
             self.wallet_friendly_name = config['default']['wallet_friendly_name']
+            self.pushover_api_key = config['default']['pushover_api_key']
+            self.pushover_user_key = config['default']['pushover_user_key']
+            # [drip]
+            self.perform_drip_compounding = config['drip']['perform_drip_compounding']
+            self.max_tries = config['drip']['max_tries']
+            self.max_tries_delay = config['drip']['max_tries_delay']
+            self.min_bnb_balance = config['default']['min_bnb_balance']
         except:
             logging.info('There was an error opening the config file %s' % config_file)
             logging.info('If this config file does not exist yet, run with -n to create')
+            print(traceback.format_exc())
             sys.exit(2)
 
     def createDefaultConfig(self, config_file):
@@ -87,13 +106,16 @@ class DripCompoundClass:
             config = configparser.ConfigParser()
             config['default'] = {
                 'private_key': '  # Mandatory - gives write access to your wallet KEEP THIS SECRET!!',
-                'wallet_friendly_name': 'Test Drip Wallet  # Mandatory - Frienly Name to display in output',
-                'perform_drip_compounding': 'False  # Set to true to actually perform compounding',
-                '#max_tries': '1  # Optional - Number of retries on a transaction failure - will cost gas each time - defaults to 1 - which is only try once.',
-                '#min_bnb_balance': '0.02  # Optional -  Min BNB Balance to have in your wallet to allow compounding action - default 0.02',
+                'wallet_friendly_name': 'Test Drip Wallet  # Mandatory - Friendly name to display in output',
                 '#pushover_api_key': '  # Optional - If you have an account on https://pushover.net/ you can set this up to send notfications to your phone.',
                 '#pushover_user_key': '  # Optional - If you have an account on https://pushover.net/ you can set this up to send notfications to your phone.'
                 }
+            config['drip'] = {
+                'perform_drip_compounding': 'False  # Set to true to actually perform compounding',
+                'max_tries': '2  # Number of retries on a transaction failure - will cost gas each time. 2 means try once more if there is a failure.',
+                'max_tries_delay': '180  # Seconds between retries on a transaction failure. Wait this long before trying again.',
+                '#min_bnb_balance': '0.02  # Optional -  Min BNB Balance to have in your wallet to allow compounding action - default 0.02'
+            }
             # Open new file to write
             try:
                 with open(config_file, "w") as f:
@@ -138,20 +160,26 @@ class DripCompoundClass:
         self.BNBbalance = round(wei2eth(self.BNBbalance),self.rounding)
 
     def checkAvailableBNBBalance(self):
-        if self.BNBbalance > self.min_balance:
-            logging.info('BNB Balance is %s' % round(self.BNBbalance,self.rounding))
-        else:
-            logging.info('Your current BNB balance(%s) is below min required (%s)' % (self.BNBbalance, self.min_balance))
-            self.sendMessage('BNB Balance issue','Your current BNB balance(%s) is below min required (%s) for %s' % (self.BNBbalance, self.min_balance, self.wallet_friendly_name))
-            sys.exit()
+        if self.min_bnb_balance:
+            if self.BNBbalance > self.min_bnb_balance:
+                logging.info('BNB Balance is %s' % round(self.BNBbalance,self.rounding))
+            else:
+                msg = 'Your current BNB balance(%s) is below min required (%s) for %s' % (self.BNBbalance, self.min_bnb_balance, self.wallet_friendly_name)
+                logging.info(msg)
+                self.sendMessage('BNB Balance issue',msg)
+                sys.exit()
 
     def nonce(self):
         return self.w3.eth.getTransactionCount(self.address)
 
-    def compoundDrip(self, max_tries=1, retry_sleep=30):
+    def compoundDrip(self):
+        max_tries = self.max_tries
+        retry_sleep = self.max_tries_delay
+        default_sleep_between_actions=30  # This ensures enough time for the network to settle and provide accurate results.
+
         remaining_retries = max_tries
         txn_receipt = None
-        if self.perform_write_tx.lower() == "true":
+        if self.perform_drip_compounding.lower() == "true":
             for _ in range(max_tries):
                 try:
                     remaining_retries+=-1
@@ -160,9 +188,9 @@ class DripCompoundClass:
                     signed_tx = self.w3.eth.account.sign_transaction(tx, self.private_key)
                     txn = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
                     txn_receipt = self.w3.eth.waitForTransactionReceipt(txn)
-                    if txn_receipt and "status" in txn_receipt and txn_receipt["status"] == 1: 
+                    if txn_receipt and "status" in txn_receipt and txn_receipt["status"] == 1:
                         logging.info("Transaction Successful: %s" % (self.w3.toHex(txn)))
-                        time.sleep(10)
+                        time.sleep(default_sleep_between_actions)
                         self.getDripBalance()
                         logging.info("Updated Drip balance is: %s (Increase %s) - tx %s" % (self.DripBalance,self.getDripBalanceIncrease(),self.w3.toHex(txn)))
                         self.sendMessage("Compounding Complete","Updated Balance %s (Increase %s) - tx %s" % (self.DripBalance,self.getDripBalanceIncrease(),self.w3.toHex(txn)))
@@ -175,7 +203,7 @@ class DripCompoundClass:
                             time.sleep(retry_sleep)
                 except:
                     logging.info(traceback.format_exc())
-                    time.sleep(10)
+                    time.sleep(default_sleep_between_actions)
         else:
             logging.info("Compounding is set to False, only outputting some messages")
             self.getDripBalance()
@@ -194,31 +222,21 @@ class DripCompoundClass:
         if self.pushover_api_key and self.pushover_user_key:
             self.client = Client(self.pushover_user_key, api_token=self.pushover_api_key)
 
-    def setWalletFriendlyName(self,wallet_name="Default Wallet"):
-        self.wallet_name = wallet_name
-
-
 def main():
     # Setup logger.
     log_format = '%(asctime)s: %(message)s'
     logging.basicConfig(level=logging.INFO, format=log_format, stream=sys.stdout)
-    logging.info('Dripping Work v%s Started!' % VERSION)
+    logging.info('Drip Automation v%s Started!' % VERSION)
     logging.info('----------------')
 
-    # Import the env file we're using for testing - if running from CLI - we use docker so don't need it.
-    load_dotenv(dotenv_path="../drip_wallet.env")
-
-    perform_compounding = os.environ.pop('PERFORM_DRIP_COMPOUNDING', "False")
-    min_bnb_balance = float(os.environ.pop('MIN_BNB_BALANCE', 0.02))
-
-    dripwallet = DripCompoundClass(perform_compounding, min_balance=min_bnb_balance)
+    dripwallet = DripCompoundClass()
 
     logging.info("Current Balance %s" % dripwallet.DripBalance)
     logging.info("Available to compound %s" % dripwallet.claimsAvailable)
     dripwallet.sendMessage("Drip Compounding","Current Balance %s - Compound %s" % (dripwallet.DripBalance,dripwallet.claimsAvailable))
 
     # Actually do the compound step
-    dripwallet.compoundDrip(max_tries=int(os.environ.pop('MAX_TRIES',1)),retry_sleep=30)
+    dripwallet.compoundDrip()
 
 
 if __name__ == "__main__":
