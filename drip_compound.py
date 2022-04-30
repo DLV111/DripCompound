@@ -88,8 +88,8 @@ class DripCompoundClass:
             self.pushover_user_key = config['default']['pushover_user_key']
             # [drip]
             self.perform_drip_compounding = config['drip']['perform_drip_compounding']
-            self.max_tries = config['drip']['max_tries']
-            self.max_tries_delay = config['drip']['max_tries_delay']
+            self.max_tries = int(config['drip']['max_tries'])
+            self.max_tries_delay = int(config['drip']['max_tries_delay'])
             self.min_bnb_balance = config['default']['min_bnb_balance']
         except:
             logging.info('There was an error opening the config file %s' % config_file)
