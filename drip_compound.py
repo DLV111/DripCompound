@@ -157,10 +157,9 @@ class DripCompoundClass:
         self.BNBbalance = round(wei2eth(self.BNBbalance),self.rounding)
 
     def checkAvailableBNBBalance(self):
-        if self.min_bnb_balance:
-            if self.BNBbalance > self.min_bnb_balance:
-                logging.info('BNB Balance is %s' % round(self.BNBbalance,self.rounding))
-            else:
+        logging.info('BNB Balance is %s' % round(self.BNBbalance,self.rounding))
+        if self.min_bnb_balance:  # Do we have a min balance defined?
+            if self.BNBbalance < self.min_bnb_balance:
                 msg = 'Your current BNB balance(%s) is below min required (%s) for %s' % (self.BNBbalance, self.min_bnb_balance, self.wallet_friendly_name)
                 logging.info(msg)
                 self.sendMessage('BNB Balance issue',msg)
