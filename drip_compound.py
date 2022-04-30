@@ -13,7 +13,7 @@ import configparser
 
 DRIP_TOKEN_ADDRESS = "0xFFE811714ab35360b67eE195acE7C10D93f89D8C"
 DRIP_FAUCET_ABI_FILE = "./abis/Faucet.json"
-VERSION = '1.0'
+VERSION = '1.1'
 
 class DripCompoundClass:
     def __init__(self, txn_timeout=120, gas_price=5, rpc_host="https://bsc-dataseed.binance.org:443",rounding=3, **kwargs):
@@ -48,7 +48,6 @@ class DripCompoundClass:
         self.checkAvailableBNBBalance()
 
     def validateConfig(self):
-        logging.info(self.private_key)
         if self.private_key == "":
             logging.info("private_key is not set")
             sys.exit(1)
