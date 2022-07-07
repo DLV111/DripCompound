@@ -5,7 +5,7 @@ This is some basic automation I put together to perform my daily drip compoundin
 
 If you like this please buy me a coffee &/or beer :-) - Airdrop some DRIP or send some BNB/BUSD to my wallet address
 
-`0x1007aaf4b214622155de89546486a070eb731dc0`
+`0xfdb5550aa2145573cf878e6e90e061c611d170b8`
 
 If you have any questions you can reach me at https://t.me/Zobah111 or just say thanks :-)
 
