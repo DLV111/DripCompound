@@ -13,7 +13,7 @@ import configparser
 
 DRIP_TOKEN_ADDRESS = "0xFFE811714ab35360b67eE195acE7C10D93f89D8C"
 DRIP_FAUCET_ABI_FILE = "./abis/Faucet.json"
-VERSION = '1.1'
+VERSION = '1.2'
 
 class DripCompoundClass:
     def __init__(self, txn_timeout=120, gas_price=5, rpc_host="https://bsc-dataseed.binance.org:443",rounding=3, **kwargs):
