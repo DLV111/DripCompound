@@ -19,10 +19,10 @@ class DripCompoundClass:
     def __init__(self, txn_timeout=120, gas_price=5, rpc_host="https://bsc-dataseed.binance.org:443",rounding=3, **kwargs):
 
         self.config_args = self.argparser()
-        self.config = self.readInConfig(self.config_args)
+        self.readInConfig(self.config_args)
         self.validateConfig()
 
-        logging.info('"%s" Selected for processing' % self.wallet_friendly_name)
+        logging.info('"%s" Selected for processing', self.wallet_friendly_name)
         self.rounding = rounding
         self.txn_timeout = txn_timeout
         self.gas_price = gas_price
@@ -91,7 +91,7 @@ class DripCompoundClass:
             self.max_tries_delay = int(config['drip']['max_tries_delay'])
             self.min_bnb_balance = config['drip']['min_bnb_balance']
         except:
-            logging.info('There was an error opening the config file %s' % config_file)
+            logging.info('There was an error opening the config file %s', config_file)
             logging.info('If this config file does not exist yet, run with -n to create')
             print(traceback.format_exc())
             sys.exit(2)
@@ -136,6 +136,7 @@ class DripCompoundClass:
         parser = argparse.ArgumentParser(description=description,
                                         formatter_class=argparse.RawTextHelpFormatter)
         parser.add_argument("-n", "--new-config", action="store_true", help="Create a new config file at the location specified - If file exists no action is taken")
+        parser.add_argument("-c", "--claim", action="store_true", help="claim instead of compound")
         parser.add_argument("config_file", help="Path to the config file")
         args = parser.parse_args()
         return(vars(args))
@@ -167,6 +168,57 @@ class DripCompoundClass:
 
     def nonce(self):
         return self.w3.eth.getTransactionCount(self.address)
+
+    def claim_drip_true(self):
+        """Return config if claim is passed
+
+        Returns:
+            boolean: returns true if claim is passed
+        """
+        return self.config_args['claim']
+
+    def claim_drip(self):
+        """
+        Claim drip
+        """
+        max_tries = self.max_tries
+        retry_sleep = self.max_tries_delay
+        default_sleep_between_actions=30  # network to settle
+        remaining_retries = max_tries
+        txn_receipt = None
+        if self.perform_drip_compounding.lower() == "true":
+            for _ in range(max_tries):
+                try:
+                    remaining_retries+=-1
+                    tx = self.drip_contract.functions.claim().buildTransaction({
+                                        "gasPrice": eth2wei(self.gas_price, "gwei"), "nonce": self.nonce()})
+                    signed_tx = self.w3.eth.account.sign_transaction(tx, self.private_key)
+                    txn = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+                    txn_receipt = self.w3.eth.waitForTransactionReceipt(txn)
+                    if txn_receipt and "status" in txn_receipt and txn_receipt["status"] == 1:
+                        logging.info("Claim Transaction Successful: %s",self.w3.toHex(txn))
+                        time.sleep(default_sleep_between_actions)
+                        self.getDripBalance()
+                        msg = f"Claimed {self.claimsAvailable} - tx {self.w3.toHex(txn)}"
+                        logging.info(msg)
+                        self.sendMessage("Claim Complete", msg)
+                        break
+                    else:
+                        msg = f"Claim Failed. {remaining_retries} retries remaining ({retry_sleep} seconds apart). Transaction status '{txn_receipt['status']}' - tx {self.w3.toHex(txn)}"
+                        logging.info(msg)
+                        self.sendMessage("Claim Failed", msg)
+                        logging.debug(txn_receipt)
+                        if remaining_retries != 0:
+                            time.sleep(retry_sleep)
+                except:
+                    logging.info(traceback.format_exc())
+                    time.sleep(default_sleep_between_actions)
+        else:
+            logging.info("Claim/Compound is set to False, only outputting some messages")
+            self.getDripBalance()
+            msg = f"Test Claim Transaction Successful: {self.claimsAvailable}"
+            logging.info(msg)
+            self.sendMessage("Claim Complete", msg)
 
     def compoundDrip(self):
         max_tries = self.max_tries
@@ -222,17 +274,23 @@ def main():
     # Setup logger.
     log_format = '%(asctime)s: %(message)s'
     logging.basicConfig(level=logging.INFO, format=log_format, stream=sys.stdout)
-    logging.info('Drip Automation v%s Started!' % VERSION)
+    logging.info('Drip Automation v%s Started!', VERSION)
     logging.info('----------------')
 
     dripwallet = DripCompoundClass()
 
-    logging.info("Current Balance %s" % dripwallet.DripBalance)
-    logging.info("Available to compound %s" % dripwallet.claimsAvailable)
-    dripwallet.sendMessage("Drip Compounding","Current Balance %s - Compound %s" % (dripwallet.DripBalance,dripwallet.claimsAvailable))
+    logging.info("Current Balance %s", dripwallet.DripBalance)
+    logging.info("Available to compound/claim %s", dripwallet.claimsAvailable)
 
     # Actually do the compound step
-    dripwallet.compoundDrip()
+    if dripwallet.claim_drip_true():
+        msg = f"Current Balance {dripwallet.DripBalance} - Claiming {dripwallet.claimsAvailable}"
+        dripwallet.sendMessage("Drip Claiming",msg)
+        dripwallet.claim_drip()
+    else:
+        msg = f"Current Balance {dripwallet.DripBalance} - Compound {dripwallet.claimsAvailable}"
+        dripwallet.sendMessage("Drip Compounding",msg)
+        dripwallet.compoundDrip()
 
 
 if __name__ == "__main__":
